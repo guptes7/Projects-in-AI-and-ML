@@ -1,0 +1,84 @@
+Task 1 (20 points): Advanced Objective Function and Use Case
+
+1. Derive the objective function for Logistic Regression using Maximum Likelihood Estimation (MLE). Do some research on the MAP technique for Logistic Regression, include your research on how this technique is different from MLE (include citations).
+
+Step A — Model and notation
+We have a binary classification dataset:
+    D = {(x_i, y_i)}_{i=1..m},  x_i ∈ R^d,  y_i ∈ {0,1}.
+Logistic regression models the probability of the positive class as:
+    p(y_i = 1 | x_i; w, b) = σ(z_i) = 1 / (1 + e^{-z_i}),
+    z_i = w^T x_i + b.
+So the model prediction is:
+    ŷ_i = σ(w^T x_i + b).
+
+Step B — Likelihood
+For one example (x_i, y_i), the Bernoulli likelihood is:
+    p(y_i | x_i; w, b) = (ŷ_i)^{y_i} (1 - ŷ_i)^{(1 - y_i)}.
+Assuming samples are i.i.d., the likelihood of the full dataset is:
+    L(w,b) = ∏_{i=1..m} (ŷ_i)^{y_i} (1 - ŷ_i)^{(1 - y_i)}.
+
+Step C — Log-likelihood and MLE objective
+Maximizing likelihood is equivalent to maximizing log-likelihood:
+    log L(w,b) = Σ_{i=1..m} [ y_i log(ŷ_i) + (1 - y_i) log(1 - ŷ_i) ].
+Training is commonly written as minimizing a loss, so we minimize the negative log-likelihood (NLL):
+    J_MLE(w,b) = -(1/m) Σ_{i=1..m} [ y_i log(ŷ_i) + (1 - y_i) log(1 - ŷ_i) ].
+This is the standard binary cross-entropy / log loss objective used for logistic regression.
+Citation: scikit-learn documentation for LogisticRegression (log loss / logistic loss) — https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression
+
+Step D — MAP (Maximum a Posteriori) and how it differs from MLE
+MLE chooses parameters (w,b) to maximize p(D | w,b) (data likelihood only).
+MAP chooses parameters to maximize the posterior:
+    p(w,b | D) ∝ p(D | w,b) p(w,b).
+Taking logs:
+    argmax_{w,b} log p(w,b | D) = argmax_{w,b} [ log p(D | w,b) + log p(w,b) ].
+MAP minimizes:
+    J_MAP(w,b) = J_MLE(w,b) - (1/m) log p(w,b).
+
+Common case: Gaussian prior on weights
+If we assume a zero-mean isotropic Gaussian prior on w:
+    w ~ N(0, σ_w^2 I),
+the negative log prior is proportional to ||w||_2^2:
+    J_MAP(w,b) = J_MLE(w,b) + λ ||w||_2^2,
+where λ is related to σ_w^2. This is exactly L2-regularized logistic regression.
+Citations:
+- Kevin P. Murphy, “Machine Learning: A Probabilistic Perspective”, section on logistic regression and MAP/regularization.
+- Andrew Ng, CS229 notes: “Regularization and MAP” connection (Gaussian prior ↔ L2 penalty).
+(If you need web URLs for these citations, add the official CS229 notes PDF link and the Murphy textbook reference used by your course.)
+
+Summary of differences
+- MLE: uses only the likelihood (fits parameters to maximize probability of observed labels); can overfit with many/noisy features.
+- MAP: adds a prior belief about parameters (e.g., weights should be small); introduces regularization (often improves generalization).
+
+2. Define a machine learning problem you wish to solve using Logistic Regression. Justify why logistic regression is the best choice and compare it briefly to another linear classification model (cite your work if this other technique was not covered in class).
+
+Chosen problem (example dataset: UCI Bank Marketing)
+Problem: Predict whether a bank client will subscribe to a term deposit (y ∈ {yes, no}) based on client attributes and campaign information (age, job, education, contact type, number of contacts, previous outcome, etc.).
+Citation (dataset): UCI Machine Learning Repository — Bank Marketing Dataset — https://archive.ics.uci.edu/dataset/222/bank+marketing
+
+Why logistic regression is a strong choice
+- Binary target: logistic regression directly models p(y=1 | x).
+- Interpretability: coefficients explain how each feature changes the log-odds of subscribing.
+- Probabilistic output: gives predicted probabilities, allowing decision thresholds and ranking (e.g., call clients with ŷ > 0.7).
+
+Comparison to another linear classification model: Linear SVM
+A linear SVM is also a linear classifier, but it typically optimizes hinge loss and maximizes the margin. Logistic regression optimizes log loss and is naturally probabilistic.
+- Logistic Regression: log loss (smooth), produces probabilities.
+- Linear SVM: hinge loss (margin-based), does not output calibrated probabilities without additional calibration.
+Citation: scikit-learn documentation comparing linear classifiers / SVM vs logistic regression — https://scikit-learn.org/stable/modules/linear_model.html and https://scikit-learn.org/stable/modules/svm.html
+
+3. Discuss how your dataset corresponds to the variables in your equations, highlighting any assumptions in your derivation from part 1.
+
+Mapping dataset variables to the equations (UCI Bank Marketing example)
+- Each row corresponds to one training example x_i (a single client/campaign instance).
+- The label y_i is the target column indicating whether the client subscribed to a term deposit (yes/no), encoded as 1/0.
+- The feature vector x_i ∈ R^d is built from the dataset’s input columns:
+  - Numeric columns (e.g., age, balance, duration, campaign) can be used directly (often after scaling).
+  - Categorical columns (e.g., job, marital status, education, contact) must be transformed into numeric form (e.g., one-hot encoding) to be included in x_i.
+- The parameter vector w ∈ R^d has one weight per processed feature (after encoding), and b is the intercept term.
+
+Assumptions from the derivation
+1) i.i.d. samples: each (x_i, y_i) is treated as independent and drawn from the same distribution.
+2) Model form: log-odds are linear in the features:
+       log( p(y=1|x) / (1 - p(y=1|x)) ) = w^T x + b.
+   This implies a linear decision boundary in the (encoded) feature space.
+3) No perfect multicollinearity: highly correlated features can make coefficient estimates unstable; this motivates checking multicollinearity (e.g., VIF) in Task 2.
